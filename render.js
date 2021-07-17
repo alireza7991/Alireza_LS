@@ -8,7 +8,6 @@ function parseGrammar(maxDepth, axiom, grammar) {
     // iterate over axiom
     for (var depth = 0; depth < maxDepth; depth++) {
         var nextDepth = '';
-        //console.log('Depth:' + depth + ' Parsed: '+parsed);
         for (var i = 0; i < parsed.length; i++) {
             var currentChar = parsed.charAt(i);
             if(currentChar in grammar) {
@@ -22,6 +21,8 @@ function parseGrammar(maxDepth, axiom, grammar) {
     return parsed;
 
 }
+
+var tree;
 
 function reRender() {
     // Check for empty fields 
@@ -69,9 +70,98 @@ function reRender() {
 
     alert('Successfuly parsed : {'+parsed+'}');
 
+    scene.remove(tree);
+    tree = new THREE.Object3D();
 
+    var textureLoader = new THREE.TextureLoader();
+    var branchMaterialBrown = new THREE.MeshBasicMaterial( {color: 'brown', map: textureLoader.load( "branch.jpg" )} );
+    var branchMaterialGreen = new THREE.MeshBasicMaterial( {color: 'green'} );
+    var branchMaterialBlack = new THREE.MeshBasicMaterial( {color: 'black'} );
+
+    var state = {
+        bRadius : 1.5,
+        bLength : 30,
+        bReduction : 0.1,
+        bMinRadius : 0.1,
+        position : new THREE.Vector3( 0, 0, 0 ),
+        rotation : new THREE.Quaternion(),
+        color: 0
+    }
+
+    var stateStack = [];
+    
+    for(var i = 0; i < parsed.length; i++) {
+        var char = parsed.charAt(i);
+        if(char == "F") {
+          var transform = new THREE.Quaternion();
+          transform.multiply(state.rotation);
+          var position = new THREE.Vector3(0.0, state.bLength/2, 0.0);
+          position.applyQuaternion(state.rotation);
+          state.position.add(position);
+          var geometry = new THREE.CylinderBufferGeometry(state.bRadius, state.bRadius, state.bLength, 16);
+          var material;
+          if(state.color == '0') {
+            material = branchMaterialGreen;
+          } else if(state.color == '1') {
+            material = branchMaterialBrown;
+          } else if(state.color == '2') {
+            material = branchMaterialBlack;
+          }
+          var branch = new THREE.Mesh(geometry, material);
+          branch.quaternion.copy(state.rotation);
+          branch.position.copy(state.position);
+    
+          state.position.add(position);
+          branch.castShadow = true;
+          tree.add(branch);
+        }
+        if(char >= '0' && char <= '9') {
+            state.color = char;
+        }
+        if(char == "+") {
+          state.rotation.multiply( new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), angle * Math.PI/180 ));
+        }
+        if(char == "-") {
+          state.rotation.multiply( new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -angle * Math.PI/180 ));
+        }
+        if(char == "^") {
+          state.rotation.multiply( new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -angle * Math.PI/180 ));
+        }
+        if(char == "v") {
+          state.rotation.multiply( new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle * Math.PI/180 ));
+        }
+        if(char == "<") {
+          state.rotation.multiply( new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -angle * Math.PI/180 ));
+        }
+        if(char == ">") {
+          state.rotation.multiply( new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), angle * Math.PI/180 ));
+        }
+        if(char == "[") {
+          stateStack.push(cloneState(state));
+          state.bRadius = (state.bRadius - state.bReduction) > state.bMinRadius ? (state.bRadius - state.bReduction) : state.bRadius;
+        }
+        if(char == "]") {
+          state = cloneState(stateStack.pop());
+        }
+  
+      }    
+      tree.castShadow = true;
+      
+      scene.add(tree);
 
 }
+
+function cloneState(state) {
+    return {
+      bRadius : state.bRadius,
+      bLength : state.bLength,
+      bReduction : state.bReduction,
+      bMinRadius : state.bMinRadius,
+      position : new THREE.Vector3().copy(state.position),
+      rotation : new THREE.Quaternion().copy(state.rotation),
+      color: state.color
+    }
+  }
 
 function updatePreset() {
     var preset = $('#preset').find(':selected').text();
@@ -85,24 +175,34 @@ function updatePreset() {
         $('#rule1').val('');
         $('#rule2Name').val('');
         $('#rule2').val('');
-    } else if(preset == "Plant") {
-        $('#depth').val('5');
+    } else if(preset == "2D Colored Plant") {
+        $('#depth').val('4');
         $('#angle').val('22');
         $('#axiom').val('F');
         $('#rule0Name').val('F');
-        $('#rule0').val('C0FF-[C1-F+F+F]+[C2+F-F-F]');
+        $('#rule0').val('1FF-[0-F+F+F]+[0+F-F-F]');
         $('#rule1Name').val('');
         $('#rule1').val('');
         $('#rule2Name').val('');
         $('#rule2').val('');
-    } else if(preset == "Serpiensky") {
-        $('#depth').val('6');
-        $('#angle').val('120');
-        $('#axiom').val('F-G-G');
+    } else if(preset == "3D Plant 1") {
+        $('#depth').val('3');
+        $('#angle').val('22');
+        $('#axiom').val('F');
         $('#rule0Name').val('F');
-        $('#rule0').val('F-G+F+G-F');
-        $('#rule1Name').val('G');
-        $('#rule1').val('GG');
+        $('#rule0').val('FF-[-F+F+F]>[>F<F<F]<[<F>F<F]+[+F-F-F]');
+        $('#rule1Name').val('');
+        $('#rule1').val('');
+        $('#rule2Name').val('');
+        $('#rule2').val('');
+    } else if(preset == "3D Colored Plant 1") {
+        $('#depth').val('3');
+        $('#angle').val('22');
+        $('#axiom').val('F');
+        $('#rule0Name').val('F');
+        $('#rule0').val('1FF-0[-F+F+F]>[>F<F<F]<[<F>F<F]+[+F-F-F]');
+        $('#rule1Name').val('');
+        $('#rule1').val('');
         $('#rule2Name').val('');
         $('#rule2').val('');
     } else if(preset == "Example 1") {
@@ -119,58 +219,6 @@ function updatePreset() {
         alert('Error: undefined preset');
     }
 }
-
-// const renderer = new THREE.WebGLRenderer({ antialiasing: true });
-// renderer.setSize( window.innerWidth, window.innerHeight );
-// document.getElementById("renderBox").appendChild( renderer.domElement );
-
-// const camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 500 );
-// camera.position.set( 0, 0, 100 );
-// camera.lookAt( 0, 0, 0 );
-// const controls = new THREE.OrbitControls( camera, renderer.domElement );
-// const scene = new THREE.Scene();
-			
-// var lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
-// t = 1;
-// let startVector = new THREE.Vector3(
-//     3.14 * Math.cos(t),
-//     3.14 * Math.sin(t),
-//     3 * t
-// );
-// let endVector = new THREE.Vector3(
-//     3.14 * Math.cos(t + 10),
-//     3.14 * Math.sin(t + 10),
-//     3 * t
-// );
-// let end2 = new THREE.Vector3(
-//     3.14 * Math.cos(t + 20),
-//     3.14 * Math.sin(t + 20),
-//     3 * t
-// );
-
-// let linePoints = [];
-// linePoints.push(startVector, endVector, end2);
-
-// var tubeGeometry = new THREE.TubeGeometry(
-//     new THREE.CatmullRomCurve3(linePoints),
-//     512,// path segments
-//     1,// THICKNESS
-//     8, //Roundness of Tube
-//     false //closed
-// );
-
-// let line = new THREE.Line(tubeGeometry, lineMaterial);
-// scene.add(line);
-// controls.update();
-
-// const animate = function () {
-//     requestAnimationFrame( animate );
-//     controls.update();
-// 	renderer.render( scene, camera );
-// };
-
-// animate();
-
 
 function initSky() {
 
@@ -193,13 +241,6 @@ function initSky() {
 
     renderer.render( scene, camera );
 }
-/* 
-function render() {
-    
-    renderer.render( scene, camera );
-    stats.update();
-} */
-
 
 const animate = function () {
     requestAnimationFrame( animate );
@@ -209,20 +250,16 @@ const animate = function () {
 };
 
 
-
-
 camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 100, 2000000 );
 camera.position.set( -500, 500, 500 );
 
 scene = new THREE.Scene();
 scene.background = new THREE.Color( 0xffffff );
-
 const helper = new THREE.GridHelper( 2000, 100 );
-				helper.position.y = - 199;
+				helper.position.y = 0;
 				helper.material.opacity = 0.25;
 				helper.material.transparent = true;
-scene.add( helper );
-
+scene.add(helper);
 renderer = new THREE.WebGLRenderer({ antialiasing: true });
 renderer.setPixelRatio( window.devicePixelRatio );
 renderer.setSize( window.innerWidth, window.innerHeight );
@@ -230,22 +267,11 @@ renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 0.5;
 document.body.appendChild( renderer.domElement );
-
 const controls = new THREE.OrbitControls( camera, renderer.domElement );
-//controls.addEventListener( 'change', render );
-//controls.maxPolarAngle = Math.PI / 2;
 controls.enableZoom = true;
 controls.enablePan = true;
-
-
 var stats = new Stats();
 stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
 document.body.appendChild( stats.dom );
-
-
-
-
 initSky();
-
-//render();
 animate();
