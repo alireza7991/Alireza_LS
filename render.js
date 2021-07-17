@@ -68,20 +68,20 @@ function reRender() {
 
     var parsed = parseGrammar(depth, axiom, grammar);
 
-    alert('Successfuly parsed : {'+parsed+'}');
+    //alert('Successfuly parsed : {'+parsed+'}');
 
     scene.remove(tree);
     tree = new THREE.Object3D();
 
     var textureLoader = new THREE.TextureLoader();
-    var branchMaterialBrown = new THREE.MeshBasicMaterial( {color: 'brown', map: textureLoader.load( "branch.jpg" )} );
-    var branchMaterialGreen = new THREE.MeshBasicMaterial( {color: 'green'} );
-    var branchMaterialBlack = new THREE.MeshBasicMaterial( {color: 'black'} );
+    var branchMaterialBrown = new THREE.MeshBasicMaterial({color: '#5e2605'});
+    var branchMaterialGreen = new THREE.MeshBasicMaterial({color: 'green'});
+    var branchMaterialBlack = new THREE.MeshBasicMaterial({color: 'black'});
 
     var state = {
-        bRadius : 1.5,
-        bLength : 30,
-        bReduction : 0.1,
+        bRadius : 0.75,
+        bLength : 20,
+        bReduction : 0.05,
         bMinRadius : 0.1,
         position : new THREE.Vector3( 0, 0, 0 ),
         rotation : new THREE.Quaternion(),
@@ -92,7 +92,7 @@ function reRender() {
     
     for(var i = 0; i < parsed.length; i++) {
         var char = parsed.charAt(i);
-        if(char == "F") {
+        if(char == "F" || char == "G") {
           var transform = new THREE.Quaternion();
           transform.multiply(state.rotation);
           var position = new THREE.Vector3(0.0, state.bLength/2, 0.0);
@@ -205,14 +205,14 @@ function updatePreset() {
         $('#rule1').val('');
         $('#rule2Name').val('');
         $('#rule2').val('');
-    } else if(preset == "Example 1") {
-        $('#depth').val('6');
-        $('#angle').val('90');
-        $('#axiom').val('A');
-        $('#rule0Name').val('A');
-        $('#rule0').val('AB');
-        $('#rule1Name').val('B');
-        $('#rule1').val('A');
+    } else if(preset == "2D Serpiensky") {
+        $('#depth').val('5');
+        $('#angle').val('120');
+        $('#axiom').val('F-G-G');
+        $('#rule0Name').val('F');
+        $('#rule0').val('F1-G+0F+G2-F');
+        $('#rule1Name').val('G');
+        $('#rule1').val('GG');
         $('#rule2Name').val('');
         $('#rule2').val('');
     }else {
@@ -221,37 +221,34 @@ function updatePreset() {
 }
 
 function initSky() {
-
     // Add Sky
     sky = new THREE.Sky();
-    sky.scale.setScalar( 450000 );
-    scene.add( sky );
+    sky.scale.setScalar(450000);
+    scene.add(sky);
     sun = new THREE.Vector3();
     const uniforms = sky.material.uniforms;
-	uniforms[ 'turbidity' ].value = 10;
-	uniforms[ 'rayleigh' ].value = 3;
-	uniforms[ 'mieCoefficient' ].value = 0.005;
-	uniforms[ 'mieDirectionalG' ].value = 0.7;
-
-	const phi = THREE.MathUtils.degToRad( 89 );
-	const theta = THREE.MathUtils.degToRad( 180 );
-	sun.setFromSphericalCoords( 1, phi, theta );
-    uniforms[ 'sunPosition' ].value.copy( sun );
+	uniforms['turbidity'].value = 10;
+	uniforms['rayleigh'].value = 3;
+	uniforms['mieCoefficient'].value = 0.005;
+	uniforms['mieDirectionalG'].value = 0.7;
+	const phi = THREE.MathUtils.degToRad(89.5);
+	const theta = THREE.MathUtils.degToRad(180);
+	sun.setFromSphericalCoords(1, phi, theta);
+    uniforms['sunPosition'].value.copy(sun);
 	renderer.toneMappingExposure = renderer.toneMappingExposure;
-
     renderer.render( scene, camera );
 }
 
 const animate = function () {
-    requestAnimationFrame( animate );
+    requestAnimationFrame(animate);
     controls.update();
-	renderer.render( scene, camera );
+	renderer.render(scene, camera);
     stats.update();
 };
 
 
-camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 100, 2000000 );
-camera.position.set( -500, 500, 500 );
+camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 100, 2000000);
+camera.position.set(-100, 400, 900);
 
 scene = new THREE.Scene();
 scene.background = new THREE.Color( 0xffffff );
