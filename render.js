@@ -3,6 +3,12 @@
  * June 2021
  */
 
+function getRandomInt(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min) + min); //The maximum is exclusive and the minimum is inclusive
+}
+
 function parseGrammar(maxDepth, axiom, grammar) {    
     var parsed = axiom;
     // iterate over axiom
@@ -22,7 +28,7 @@ function parseGrammar(maxDepth, axiom, grammar) {
 
 }
 
-var tree;
+var trees = [];
 
 function reRender() {
     // Check for empty fields 
@@ -70,20 +76,16 @@ function reRender() {
 
     //alert('Successfuly parsed : {'+parsed+'}');
 
-    scene.remove(tree);
+    //scene.remove(tree);
     tree = new THREE.Object3D();
 
-    var textureLoader = new THREE.TextureLoader();
-    var branchMaterialBrown = new THREE.MeshBasicMaterial({color: '#5e2605'});
-    var branchMaterialGreen = new THREE.MeshBasicMaterial({color: 'green'});
-    var branchMaterialBlack = new THREE.MeshBasicMaterial({color: 'black'});
 
     var state = {
-        bRadius : 0.75,
+        bRadius : 2.5,
         bLength : 20,
-        bReduction : 0.05,
+        bReduction :1,
         bMinRadius : 0.1,
-        position : new THREE.Vector3( 0, 0, 0 ),
+        position : new THREE.Vector3(getRandomInt(-500,500),0,getRandomInt(-500,500)),
         rotation : new THREE.Quaternion(),
         color: 0
     }
@@ -112,8 +114,24 @@ function reRender() {
           branch.position.copy(state.position);
     
           state.position.add(position);
-          branch.castShadow = true;
+          //branch.castShadow = true;
           tree.add(branch);
+        }
+        if(char == 'L') {
+          const geometry = new THREE.SphereGeometry( getRandomInt(0,10)/2, 16, 16 );
+          const material = new THREE.MeshBasicMaterial( {color: 0xff0000} );
+          const sphere = new THREE.Mesh( geometry, material );
+          sphere.position.copy(state.position);
+          tree.add(sphere);
+
+        }
+        if(char == 'Y') {
+          const geometry = new THREE.SphereGeometry( getRandomInt(0,10)/2, 16, 16 );
+          const material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
+          const sphere = new THREE.Mesh( geometry, material );
+          sphere.position.copy(state.position);
+          tree.add(sphere);
+
         }
         if(char >= '0' && char <= '9') {
             state.color = char;
@@ -145,10 +163,19 @@ function reRender() {
         }
   
       }    
-      tree.castShadow = true;
+      //tree.castShadow = true;
       
-      scene.add(tree);
+      
+      trees.push(tree);
+      scene.add(trees[trees.length - 1]);
+      
 
+}
+
+function clearRenderings() {
+  for(var i = 0; i < trees.length; i++) {
+    scene.remove(trees[i]);
+  }
 }
 
 function cloneState(state) {
@@ -165,7 +192,7 @@ function cloneState(state) {
 
 function updatePreset() {
     var preset = $('#preset').find(':selected').text();
-    if(preset == "Custom") {
+    if(preset == "Select a Pattern") {
         $('#depth').val('');
         $('#angle').val('');
         $('#axiom').val('');
@@ -176,21 +203,21 @@ function updatePreset() {
         $('#rule2Name').val('');
         $('#rule2').val('');
     } else if(preset == "2D Colored Plant") {
-        $('#depth').val('4');
-        $('#angle').val('22');
-        $('#axiom').val('F');
-        $('#rule0Name').val('F');
-        $('#rule0').val('1FF-[0-F+F+F]+[0+F-F-F]');
-        $('#rule1Name').val('');
-        $('#rule1').val('');
-        $('#rule2Name').val('');
-        $('#rule2').val('');
-    } else if(preset == "3D Plant 1") {
         $('#depth').val('3');
         $('#angle').val('22');
         $('#axiom').val('F');
         $('#rule0Name').val('F');
-        $('#rule0').val('FF-[-F+F+F]>[>F<F<F]<[<F>F<F]+[+F-F-F]');
+        $('#rule0').val('1FF-[L0-F+F+FY]+[B0+F-F-F]');
+        $('#rule1Name').val('');
+        $('#rule1').val('');
+        $('#rule2Name').val('');
+        $('#rule2').val('');
+    } else if(preset == "3D Plant 1 with fruits") {
+        $('#depth').val('3');
+        $('#angle').val('22');
+        $('#axiom').val('F');
+        $('#rule0Name').val('F');
+        $('#rule0').val('1FF-0[-FL+F+F]>[>FY<F<F]<[<FL>F<F]+[+F-F-F]');
         $('#rule1Name').val('');
         $('#rule1').val('');
         $('#rule2Name').val('');
@@ -200,7 +227,7 @@ function updatePreset() {
         $('#angle').val('22');
         $('#axiom').val('F');
         $('#rule0Name').val('F');
-        $('#rule0').val('1FF-0[-F+F+F]>[>F<F<F]<[<F>F<F]+[+F-F-F]');
+        $('#rule0').val('1FF-0[-FL+F+F]>[>F<F<F]<[<FL>F<F]+[+F-F-F]');
         $('#rule1Name').val('');
         $('#rule1').val('');
         $('#rule2Name').val('');
@@ -215,7 +242,18 @@ function updatePreset() {
         $('#rule1').val('GG');
         $('#rule2Name').val('');
         $('#rule2').val('');
-    }else {
+    }else if(preset == "3D Colored Sample") {
+      $('#depth').val('6');
+      $('#angle').val('28');
+      $('#axiom').val('1FFFA');
+      $('#rule0Name').val('A');
+      $('#rule0').val('1F[<FA][>0FA][+FA][-0FA][^0FY][v0FL]');
+      $('#rule1Name').val('');
+      $('#rule1').val('');
+      $('#rule2Name').val('');
+      $('#rule2').val('');
+   }
+    else {
         alert('Error: undefined preset');
     }
 }
@@ -257,7 +295,7 @@ const helper = new THREE.GridHelper( 2000, 100 );
 				helper.material.opacity = 0.25;
 				helper.material.transparent = true;
 scene.add(helper);
-renderer = new THREE.WebGLRenderer({ antialiasing: true });
+renderer = new THREE.WebGLRenderer({ antialiasing: false });
 renderer.setPixelRatio( window.devicePixelRatio );
 renderer.setSize( window.innerWidth, window.innerHeight );
 renderer.outputEncoding = THREE.sRGBEncoding;
@@ -268,7 +306,13 @@ const controls = new THREE.OrbitControls( camera, renderer.domElement );
 controls.enableZoom = true;
 controls.enablePan = true;
 var stats = new Stats();
-stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
+stats.showPanel(0); 
 document.body.appendChild( stats.dom );
+
+var textureLoader = new THREE.TextureLoader();
+var branchMaterialBrown = new THREE.MeshBasicMaterial({color: '#5e2605'});
+var branchMaterialGreen = new THREE.MeshBasicMaterial({color: 'green'});
+var branchMaterialBlack = new THREE.MeshBasicMaterial({color: 'black'});
+
 initSky();
 animate();
